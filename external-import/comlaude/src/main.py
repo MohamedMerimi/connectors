@@ -37,7 +37,7 @@ def _format_time(utc_time):
     return utc_time.strftime("%Y-%m-%dT%H:%M:%S") + "Z"
 
 
-# Defines a time delta of 5 minutes.
+# Defines a time delta of 5 minutes
 TIME_DELTA = datetime.timedelta(minutes=5)
 COMLAUDE_END_TIME = _format_time(datetime.datetime.utcnow() - TIME_DELTA)
 
