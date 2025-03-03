@@ -266,7 +266,7 @@ class ZscalerConnector:
             base_url = f"https://zsapi.zscalertwo.net/api/v1/urlCategories/{self.zscaler_blacklist_name}?action=REMOVE_FROM_LIST"
             payload = {
                 "configuredName": self.zscaler_blacklist_name,
-                "urls": [domain],#change of category (Custom URLs)
+                "urls": [domain],
             }
         else:
             self.helper.connector_logger.error("Unsupported event type.")
