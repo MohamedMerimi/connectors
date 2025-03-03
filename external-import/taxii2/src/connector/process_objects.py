@@ -120,23 +120,27 @@ class ProcessObjects:
                 # High score labels
                 for high_label in self.config.indicator_high_score_labels:
                     if high_label.lower() in obj_labels_set:
-                        obj["x_opencti_score"] = self.config.indicator_high_score
+                        obj["x_opencti_score"] = int(self.config.indicator_high_score)
                         break
                 # Medium score labels (if high score not already assigned)
                 if "x_opencti_score" not in obj:
                     for med_label in self.config.indicator_medium_score_labels:
                         if med_label.lower() in obj_labels_set:
-                            obj["x_opencti_score"] = self.config.indicator_medium_score
+                            obj["x_opencti_score"] = int(
+                                self.config.indicator_medium_score
+                            )
                             break
                 # Low score labels (if neither high nor medium score assigned)
                 if "x_opencti_score" not in obj:
                     for low_label in self.config.indicator_low_score_labels:
                         if low_label.lower() in obj_labels_set:
-                            obj["x_opencti_score"] = self.config.indicator_low_score
+                            obj["x_opencti_score"] = int(
+                                self.config.indicator_low_score
+                            )
                             break
                 # Default score if no match found
                 if "x_opencti_score" not in obj:
-                    obj["x_opencti_score"] = self.config.default_x_opencti_score
+                    obj["x_opencti_score"] = int(self.config.default_x_opencti_score)
         return stix_objects
 
     def set_indicator_as_detection(self, stix_objects: list) -> list:
@@ -287,6 +291,18 @@ class ProcessObjects:
                 stix_objects.append(note)
         return stix_objects
 
+    def change_report_status(self, stix_objects: list) -> list:
+        """
+        Lets you change the status of the report on ingestion
+        :return: List of STIX objects
+        """
+        for obj in stix_objects:
+            if obj["type"] == "report":
+                obj["x_opencti_workflow_id"] = (
+                    self.config.change_report_status_x_opencti_workflow_id
+                )
+        return stix_objects
+
     def objects(self, stix_objects: list) -> list:
         """
         Used to process stix_objects and make modifications
@@ -338,5 +354,8 @@ class ProcessObjects:
 
         if self.config.save_original_indicator_id_to_note:
             stix_objects = self.save_original_indicator_id_to_note(stix_objects)
+
+        if self.config.change_report_status:
+            stix_objects = self.change_report_status(stix_objects)
 
         return stix_objects

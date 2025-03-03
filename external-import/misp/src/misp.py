@@ -76,6 +76,51 @@ OPENCTISTIX2 = {
 }
 FILETYPES = ["file-name", "file-md5", "file-sha1", "file-sha256"]
 
+marking_tlp_clear = stix2.MarkingDefinition(
+    id=MarkingDefinition.generate_id("TLP", "TLP:CLEAR"),
+    definition_type="statement",
+    definition={"statement": "custom"},
+    allow_custom=True,
+    x_opencti_definition_type="TLP",
+    x_opencti_definition="TLP:CLEAR",
+)
+
+marking_pap_clear = stix2.MarkingDefinition(
+    id=MarkingDefinition.generate_id("PAP", "PAP:CLEAR"),
+    definition_type="statement",
+    definition={"statement": "custom"},
+    allow_custom=True,
+    x_opencti_definition_type="PAP",
+    x_opencti_definition="PAP:CLEAR",
+)
+
+marking_pap_green = stix2.MarkingDefinition(
+    id=MarkingDefinition.generate_id("PAP", "PAP:GREEN"),
+    definition_type="statement",
+    definition={"statement": "custom"},
+    allow_custom=True,
+    x_opencti_definition_type="PAP",
+    x_opencti_definition="PAP:GREEN",
+)
+
+marking_pap_amber = stix2.MarkingDefinition(
+    id=MarkingDefinition.generate_id("PAP", "PAP:AMBER"),
+    definition_type="statement",
+    definition={"statement": "custom"},
+    allow_custom=True,
+    x_opencti_definition_type="PAP",
+    x_opencti_definition="PAP:AMBER",
+)
+
+marking_pap_red = stix2.MarkingDefinition(
+    id=MarkingDefinition.generate_id("PAP", "PAP:RED"),
+    definition_type="statement",
+    definition={"statement": "custom"},
+    allow_custom=True,
+    x_opencti_definition_type="PAP",
+    x_opencti_definition="PAP:RED",
+)
+
 
 def is_uuid(val):
     try:
@@ -612,7 +657,7 @@ class Misp:
             if "Tag" in event["Event"]:
                 event_markings = self.resolve_markings(event["Event"]["Tag"])
             else:
-                event_markings = [stix2.TLP_WHITE]
+                event_markings = [marking_tlp_clear]
             # Elements
             event_elements = self.prepare_elements(
                 event["Event"].get("Galaxy", []),
@@ -965,7 +1010,6 @@ class Misp:
                     labels=event_tags,
                     object_refs=object_refs,
                     external_references=event_external_references,
-                    confidence=self.helper.connect_confidence_level,
                     custom_properties={
                         "x_opencti_files": added_files,
                     },
@@ -980,7 +1024,6 @@ class Misp:
                             ),
                             self.process_note(note["content"], bundle_objects),
                         ),
-                        confidence=self.helper.connect_confidence_level,
                         created=datetime.utcfromtimestamp(
                             int(note["timestamp"])
                         ).strftime("%Y-%m-%dT%H:%M:%SZ"),
@@ -1147,7 +1190,6 @@ class Misp:
                         id=Indicator.generate_id(pattern),
                         name=name,
                         description=attribute["comment"],
-                        confidence=self.helper.connect_confidence_level,
                         pattern_type=pattern_type,
                         pattern=pattern,
                         valid_from=datetime.utcfromtimestamp(
@@ -1429,26 +1471,35 @@ class Misp:
                         allow_custom=True,
                     )
                 )
-            ### Create relationship between MISP attribute (indicator or observable) and MISP object (observable)
-            if object_observable is not None and (
-                indicator is not None or observable is not None
-            ):
-                relationships.append(
-                    stix2.Relationship(
-                        id=StixCoreRelationship.generate_id(
-                            "related-to",
-                            object_observable.id,
-                            observable.id if observable is not None else indicator.id,
-                        ),
-                        relationship_type="related-to",
-                        created_by_ref=author["id"],
-                        source_ref=object_observable.id,
-                        target_ref=(
-                            observable.id if (observable is not None) else indicator.id
-                        ),
-                        allow_custom=True,
-                    )
+
+            # Create relationship between MISP attribute (indicator or observable) and MISP object (observable)
+            if object_observable is not None:
+
+                indicator_id = indicator.get("id") if indicator else None
+                observable_id = observable.get("id") if observable else None
+                source_id = object_observable.get("id")
+                target_id = (
+                    observable_id
+                    if observable_id is not None and observable_id != source_id
+                    else indicator_id
                 )
+
+                if target_id is not None:
+                    relationships.append(
+                        stix2.Relationship(
+                            id=StixCoreRelationship.generate_id(
+                                "related-to",
+                                source_id,
+                                target_id,
+                            ),
+                            relationship_type="related-to",
+                            created_by_ref=author["id"],
+                            source_ref=source_id,
+                            target_ref=target_id,
+                            allow_custom=True,
+                        )
+                    )
+
             # Event threats
             threat_names = {}
             for threat in (
@@ -1469,7 +1520,6 @@ class Misp:
                             target_ref=threat.id,
                             description=attribute["comment"],
                             object_marking_refs=attribute_markings,
-                            confidence=self.helper.connect_confidence_level,
                             allow_custom=True,
                         )
                     )
@@ -1485,7 +1535,6 @@ class Misp:
                             target_ref=threat.id,
                             description=attribute["comment"],
                             object_marking_refs=attribute_markings,
-                            confidence=self.helper.connect_confidence_level,
                             allow_custom=True,
                         )
                     )
@@ -1512,7 +1561,6 @@ class Misp:
                             target_ref=threat_id,
                             description=attribute["comment"],
                             object_marking_refs=attribute_markings,
-                            confidence=self.helper.connect_confidence_level,
                             allow_custom=True,
                         )
                     )
@@ -1528,7 +1576,6 @@ class Misp:
                             target_ref=threat_id,
                             description=attribute["comment"],
                             object_marking_refs=attribute_markings,
-                            confidence=self.helper.connect_confidence_level,
                             allow_custom=True,
                         )
                     )
@@ -1555,7 +1602,6 @@ class Misp:
                         target_ref=attack_pattern.id,
                         description=attribute["comment"],
                         object_marking_refs=attribute_markings,
-                        confidence=self.helper.connect_confidence_level,
                         allow_custom=True,
                     )
                     relationships.append(relationship_uses)
@@ -1569,7 +1615,6 @@ class Misp:
                     #         source_ref=indicator.id,
                     #         target_ref=relationship_uses.id,
                     #         description=attribute["comment"],
-                    #         confidence=self.helper.connect_confidence_level,
                     #         object_marking_refs=attribute_markings,
                     #     )
                     #     relationships.append(relationship_indicates)
@@ -1583,7 +1628,6 @@ class Misp:
                     #         source_ref=observable.id,
                     #         target_ref=relationship_uses.id,
                     #         description=attribute["comment"],
-                    #         confidence=self.helper.connect_confidence_level,
                     #         object_marking_refs=attribute_markings,
                     #     )
                     #     relationships.append(relationship_indicates)
@@ -1606,7 +1650,6 @@ class Misp:
                             "uses", threat_id, attack_pattern.id
                         ),
                         relationship_type="uses",
-                        confidence=self.helper.connect_confidence_level,
                         created_by_ref=author["id"],
                         source_ref=threat_id,
                         target_ref=attack_pattern.id,
@@ -1625,7 +1668,6 @@ class Misp:
                     #        source_ref=indicator.id,
                     #        target_ref=relationship_uses.id,
                     #        description=attribute["comment"],
-                    #        confidence=self.helper.connect_confidence_level,
                     #        object_marking_refs=attribute_markings,
                     #    )
                     #    relationships.append(relationship_indicates)
@@ -1639,7 +1681,6 @@ class Misp:
                     #        source_ref=observable.id,
                     #        target_ref=relationship_uses.id,
                     #        description=attribute["comment"],
-                    #        confidence=self.helper.connect_confidence_level,
                     #        object_marking_refs=attribute_markings,
                     #    )
                     #    relationships.append(relationship_indicates)
@@ -1656,7 +1697,6 @@ class Misp:
                             target_ref=sector.id,
                             description=attribute["comment"],
                             object_marking_refs=attribute_markings,
-                            confidence=self.helper.connect_confidence_level,
                             allow_custom=True,
                         )
                     )
@@ -1672,7 +1712,6 @@ class Misp:
                             target_ref=sector.id,
                             description=attribute["comment"],
                             object_marking_refs=attribute_markings,
-                            confidence=self.helper.connect_confidence_level,
                             allow_custom=True,
                         )
                     )
@@ -1690,7 +1729,6 @@ class Misp:
                             target_ref=country.id,
                             description=attribute["comment"],
                             object_marking_refs=attribute_markings,
-                            confidence=self.helper.connect_confidence_level,
                             allow_custom=True,
                         )
                     )
@@ -1706,7 +1744,6 @@ class Misp:
                             target_ref=country.id,
                             description=attribute["comment"],
                             object_marking_refs=attribute_markings,
-                            confidence=self.helper.connect_confidence_level,
                             allow_custom=True,
                         )
                     )
@@ -1764,7 +1801,6 @@ class Misp:
                             stix2.IntrusionSet(
                                 id=IntrusionSet.generate_id(name),
                                 name=name,
-                                confidence=self.helper.connect_confidence_level,
                                 labels=["intrusion-set"],
                                 description=galaxy_entity["description"],
                                 created_by_ref=author["id"],
@@ -1821,7 +1857,6 @@ class Misp:
                                 id=Malware.generate_id(name),
                                 name=name,
                                 is_family=True,
-                                confidence=self.helper.connect_confidence_level,
                                 aliases=aliases,
                                 labels=[galaxy["name"]],
                                 description=galaxy_entity["description"],
@@ -1914,7 +1949,6 @@ class Misp:
                             stix2.Location(
                                 id=Location.generate_id(name, "Region"),
                                 name=name,
-                                confidence=self.helper.connect_confidence_level,
                                 region=name,
                                 allow_custom=True,
                             )
@@ -1963,7 +1997,6 @@ class Misp:
                                     stix2.IntrusionSet(
                                         id=IntrusionSet.generate_id(threat["name"]),
                                         name=threat["name"],
-                                        confidence=self.helper.connect_confidence_level,
                                         created_by_ref=author["id"],
                                         object_marking_refs=markings,
                                         allow_custom=True,
@@ -1976,7 +2009,6 @@ class Misp:
                                         id=Malware.generate_id(threat["name"]),
                                         name=threat["name"],
                                         is_family=True,
-                                        confidence=self.helper.connect_confidence_level,
                                         created_by_ref=author["id"],
                                         object_marking_refs=markings,
                                         allow_custom=True,
@@ -1988,7 +2020,6 @@ class Misp:
                                     stix2.Tool(
                                         id=Tool.generate_id(threat["name"]),
                                         name=threat["name"],
-                                        confidence=self.helper.connect_confidence_level,
                                         created_by_ref=author["id"],
                                         object_marking_refs=markings,
                                         allow_custom=True,
@@ -2000,7 +2031,6 @@ class Misp:
                                     stix2.AttackPattern(
                                         id=AttackPattern.generate_id(threat["name"]),
                                         name=threat["name"],
-                                        confidence=self.helper.connect_confidence_level,
                                         created_by_ref=author["id"],
                                         object_marking_refs=markings,
                                         allow_custom=True,
@@ -2044,7 +2074,6 @@ class Misp:
                             stix2.IntrusionSet(
                                 id=IntrusionSet.generate_id(name),
                                 name=name,
-                                confidence=self.helper.connect_confidence_level,
                                 created_by_ref=author["id"],
                                 object_marking_refs=markings,
                                 allow_custom=True,
@@ -2075,7 +2104,6 @@ class Misp:
                             stix2.Tool(
                                 id=Tool.generate_id(name),
                                 name=name,
-                                confidence=self.helper.connect_confidence_level,
                                 created_by_ref=author["id"],
                                 object_marking_refs=markings,
                                 allow_custom=True,
@@ -2111,7 +2139,6 @@ class Misp:
                                 id=Malware.generate_id(name),
                                 name=name,
                                 is_family=True,
-                                confidence=self.helper.connect_confidence_level,
                                 created_by_ref=author["id"],
                                 object_marking_refs=markings,
                                 allow_custom=True,
@@ -2143,7 +2170,6 @@ class Misp:
                             stix2.AttackPattern(
                                 id=AttackPattern.generate_id(name),
                                 name=name,
-                                confidence=self.helper.connect_confidence_level,
                                 created_by_ref=author["id"],
                                 object_marking_refs=markings,
                                 allow_custom=True,
@@ -2160,7 +2186,6 @@ class Misp:
                             stix2.Identity(
                                 id=Identity.generate_id(name, "class"),
                                 name=name,
-                                confidence=self.helper.connect_confidence_level,
                                 identity_class="class",
                                 created_by_ref=author["id"],
                                 object_marking_refs=markings,
@@ -2344,9 +2369,9 @@ class Misp:
                     )
                     markings.append(marking)
             if tag_name_lower == "tlp:clear":
-                markings.append(stix2.TLP_WHITE)
+                markings.append(marking_tlp_clear)
             if tag_name_lower == "tlp:white":
-                markings.append(stix2.TLP_WHITE)
+                markings.append(marking_tlp_clear)
             if tag_name_lower == "tlp:green":
                 markings.append(stix2.TLP_GREEN)
             if tag_name_lower == "tlp:amber":
@@ -2363,8 +2388,17 @@ class Misp:
                 markings.append(marking)
             if tag_name_lower == "tlp:red":
                 markings.append(stix2.TLP_RED)
+            # handle PAP markings
+            if tag_name_lower == "pap:clear":
+                markings.append(marking_pap_clear)
+            if tag_name_lower == "pap:green":
+                markings.append(marking_pap_green)
+            if tag_name_lower == "pap:amber":
+                markings.append(marking_pap_amber)
+            if tag_name_lower == "pap:red":
+                markings.append(marking_pap_red)
         if len(markings) == 0 and with_default:
-            markings.append(stix2.TLP_WHITE)
+            markings.append(marking_tlp_clear)
         return markings
 
     def resolve_tags(self, tags):
@@ -2375,6 +2409,7 @@ class Misp:
 
         for tag in tags:
             self.helper.log_info(f"found tag: {tag}")
+            tag_name_lower = tag["name"].lower()
             # we take the tag as-is if it starts by a prefix stored in the keep_original_tags_as_label configuration
             if any(
                 map(
@@ -2386,11 +2421,16 @@ class Misp:
                 opencti_tags.append(tag["name"])
 
             elif (
-                tag["name"] != "tlp:white"
-                and tag["name"] != "tlp:green"
-                and tag["name"] != "tlp:amber"
-                and tag["name"] != "tlp:amber+strict"
-                and tag["name"] != "tlp:red"
+                tag_name_lower != "tlp:white"
+                and tag_name_lower != "tlp:clear"
+                and tag_name_lower != "tlp:green"
+                and tag_name_lower != "tlp:amber"
+                and tag_name_lower != "tlp:amber+strict"
+                and tag_name_lower != "tlp:red"
+                and tag_name_lower != "pap:clear"
+                and tag_name_lower != "pap:green"
+                and tag_name_lower != "pap:amber"
+                and tag_name_lower != "pap:red"
                 and not tag["name"].startswith("misp-galaxy:threat-actor")
                 and not tag["name"].startswith("misp-galaxy:mitre-threat-actor")
                 and not tag["name"].startswith("misp-galaxy:microsoft-activity-group")
