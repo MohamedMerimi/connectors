@@ -260,7 +260,7 @@ class ZscalerConnector:
 
             payload = {
                 "configuredName": self.zscaler_blacklist_name,
-                "urls": [domain],
+                "urls": [domain], #change of category (Custom URLs)
             }
         elif event_type == "delete":
             base_url = f"https://zsapi.zscalertwo.net/api/v1/urlCategories/{self.zscaler_blacklist_name}?action=REMOVE_FROM_LIST"
