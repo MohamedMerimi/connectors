@@ -313,15 +313,15 @@ class TheHive:
 
     def get_updated_date(self, item, last_date):
         """Get the highest date observed within item and last_date."""
-        if "updatedAt" in item and item["updatedAt"] is not None:
-            new_date = int(item["updatedAt"] / 1000) + 1
+        if "_updatedAt" in item and item["_updatedAt"] is not None:
+            new_date = int(item["_updatedAt"] / 1000) + 1
             self.helper.log_debug(
-                f"Using 'updatedAt' for last date calculation: {last_date} new date calculation: {new_date}"
+                f"Using '_updatedAt' for last date calculation: {last_date} new date calculation: {new_date}"
             )
         else:
             new_date = int(item.get("_createdAt") / 1000) + 1
             self.helper.log_debug(
-                f"Using 'createdAt' for last date calculation: {last_date} new date calculation: {new_date}"
+                f"Using '_createdAt' for last date calculation: {last_date} new date calculation: {new_date}"
             )
         return max(last_date, new_date)
 
