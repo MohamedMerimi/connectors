@@ -45,7 +45,7 @@ class ZscalerConnector:
         self.session_cookie = None # To store the JSESSIONID
 
         self.rate_limit = 400 # Limit to 400 requests per hour 
-        self.retry_delay = 65 # Retry delay in seconds
+        self.retry_delay = 65 
 
     def authenticate_with_zscaler(self):
         """Authenticate with Zscaler and obtain a session token."""
