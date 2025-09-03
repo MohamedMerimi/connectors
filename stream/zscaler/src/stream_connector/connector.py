@@ -320,6 +320,8 @@ class ZscalerConnector:
         self.helper.connector_logger.error("Activation failed after all retries.")
         return False
 
+
+
     def _process_message(self, msg):
         """Process messages from the OpenCTI stream."""
         data = json.loads(msg.data)["data"]
@@ -334,6 +336,9 @@ class ZscalerConnector:
         else:
             msg = "Ignoring non-STIX indicator."
             self.helper.connector_logger.info(msg)
+
+
+
 
     def _process_message(self, msg):
         """Process messages from the OpenCTI stream."""
