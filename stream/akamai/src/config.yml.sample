@@ -17,9 +17,9 @@ akamai:
   client_token: 'ChangeMe'
   client_secret: 'ChangeMe'
   access_token: 'ChangeMe'
+
+  # Client List Akamai de type IP
   client_list_id: 'ChangeMe'
 
-
-ssl_verify: true
-
-
+  # Client List Akamai de type ASN
+  asn_client_list_id: 'ChangeMe'
